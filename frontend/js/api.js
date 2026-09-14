@@ -2,8 +2,10 @@
    api.js — Kararsız | Backend API İletişim Katmanı
    ============================================================ */
 
-const API_BASE = 'http://localhost:8000/api';
-
+// Vercel'de çalışırken /api'ye, lokalde ise localhost:8000/api'ye gitsin
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+  ? 'http://localhost:8000/api' 
+  : '/api';
 // ---------- Token Yönetimi ----------
 const Auth = {
   getAccess:  () => localStorage.getItem('kararsiz_access'),
