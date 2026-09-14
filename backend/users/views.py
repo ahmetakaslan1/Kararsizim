@@ -33,14 +33,24 @@ class RegisterView(APIView):
             # E-posta onay token'ı ve linki üret
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            verification_link = f"{settings.FRONTEND_URL}/verify-email.html?uid={uid}&token={token}"
+            verification_link = f"{settings.FRONTEND_URL.rstrip('/')}/verify-email.html?uid={uid}&token={token}"
+            
+            html_content = f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2>Kararsızım'a Hoş Geldin, {user.username}!</h2>
+                <p>Hesabınızı doğrulamak için aşağıdaki butona tıklayın:</p>
+                <a href="{verification_link}" style="display: inline-block; padding: 12px 24px; color: #ffffff; background-color: #6366f1; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px 0;">Hesabımı Doğrula</a>
+                <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">Buton çalışmıyorsa şu linki kopyalayıp tarayıcınıza yapıştırın:<br>{verification_link}</p>
+            </div>
+            """
             
             send_mail(
                 'Kararsızım - E-posta Doğrulama',
-                f'Merhaba {user.username},\n\nHesabınızı doğrulamak için aşağıdaki bağlantıya tıklayın:\n{verification_link}\n\nİyi günler!',
+                f'Merhaba {user.username},\n\nHesabınızı doğrulamak için tıklayın: {verification_link}',
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
+                html_message=html_content
             )
             
             return Response({'detail': 'Kayıt başarılı. Lütfen e-postanızı kontrol ederek hesabınızı onaylayın.'}, status=status.HTTP_201_CREATED)
@@ -69,12 +79,21 @@ class VerifyEmailView(APIView):
             user.save()
             
             # Hoş geldin maili
+            html_content = f"""
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2>Harika, {user.username}! 🎉</h2>
+                <p>Hesabınız başarıyla onaylandı. Artık Kararsızım platformunun bir parçasısınız.</p>
+                <p>Hemen giriş yapıp fikirlerinizi sormaya başlayabilirsiniz!</p>
+            </div>
+            """
+            
             send_mail(
                 'Aramıza Hoş Geldin!',
-                f'Merhaba {user.username},\n\nHesabınız başarıyla onaylandı. Kararsızım platformuna hoş geldin!\n\nİyi günler!',
+                f'Merhaba {user.username}, Hesabınız onaylandı.',
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 fail_silently=False,
+                html_message=html_content
             )
             
             return Response({'detail': 'Hesabınız başarıyla onaylandı.'}, status=status.HTTP_200_OK)
@@ -98,14 +117,24 @@ class PasswordResetRequestView(APIView):
             
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        reset_link = f"{settings.FRONTEND_URL}/reset-password.html?uid={uid}&token={token}"
+        reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password.html?uid={uid}&token={token}"
+        
+        html_content = f"""
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <h2>Merhaba {user.username},</h2>
+            <p>Şifrenizi sıfırlamak için bir istekte bulundunuz. Aşağıdaki butona tıklayarak yeni şifrenizi belirleyebilirsiniz:</p>
+            <a href="{reset_link}" style="display: inline-block; padding: 12px 24px; color: #ffffff; background-color: #ef4444; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px 0;">Şifremi Sıfırla</a>
+            <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">Bu isteği siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.<br><br>Buton çalışmıyorsa şu linki kopyalayıp tarayıcınıza yapıştırın:<br>{reset_link}</p>
+        </div>
+        """
         
         send_mail(
             'Kararsızım - Şifre Sıfırlama',
-            f'Merhaba {user.username},\n\nŞifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın:\n{reset_link}\n\nİyi günler!',
+            f'Şifrenizi sıfırlamak için tıklayın: {reset_link}',
             settings.DEFAULT_FROM_EMAIL,
             [user.email],
             fail_silently=False,
+            html_message=html_content
         )
         
         return Response({'detail': 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'}, status=status.HTTP_200_OK)
