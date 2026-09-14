@@ -57,6 +57,21 @@
           </div>
         </div>
 
+        <!-- KATEGORİ -->
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="poll-category" class="form-label">Kategori</label>
+            <select id="poll-category" class="form-control" required>
+              <option value="genel" selected>Genel</option>
+              <option value="kariyer">Kariyer</option>
+              <option value="iliski">İlişki</option>
+              <option value="teknoloji">Teknoloji</option>
+              <option value="alisveris">Alışveriş</option>
+              <option value="diger">Diğer</option>
+            </select>
+          </div>
+        </div>
+
         <!-- SEÇENEKLER -->
         <div class="card" style="margin-bottom:1.25rem;">
           <p class="form-label" style="margin-bottom:1rem;">Seçenekler</p>
@@ -173,6 +188,7 @@
         document.getElementById('options-error').classList.remove('visible');
 
         const question = questionEl.value.trim();
+        const category = document.getElementById('poll-category').value;
         const options  = Array.from(document.querySelectorAll('.option-input'))
           .map(inp => inp.value.trim())
           .filter(v => v.length > 0);
@@ -195,7 +211,7 @@
         submitBtn.disabled = true;
         submitBtn.textContent = 'Yayınlanıyor…';
 
-        const { ok, data, status } = await apiCreatePoll(question, options);
+        const { ok, data, status } = await apiCreatePoll(question, category, options);
 
         submitBtn.disabled = false;
         submitBtn.textContent = '✨ Anketi Yayınla';

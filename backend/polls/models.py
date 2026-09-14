@@ -6,6 +6,15 @@ User = get_user_model()
 
 class Poll(models.Model):
     """Anket modeli."""
+    CATEGORY_CHOICES = [
+        ('genel', 'Genel'),
+        ('kariyer', 'Kariyer'),
+        ('iliski', 'İlişki'),
+        ('teknoloji', 'Teknoloji'),
+        ('alisveris', 'Alışveriş'),
+        ('diger', 'Diğer'),
+    ]
+
     creator = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -13,6 +22,12 @@ class Poll(models.Model):
         verbose_name='Oluşturan'
     )
     question = models.CharField(max_length=500, verbose_name='Soru')
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default='genel',
+        verbose_name='Kategori'
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Oluşturulma tarihi')
     is_active = models.BooleanField(default=True, verbose_name='Aktif mi?')
 

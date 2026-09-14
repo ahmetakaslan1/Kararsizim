@@ -10,9 +10,9 @@ function updateNavbar() {
 
   if (user) {
     navAuth.innerHTML = `
-      <span style="font-size:0.85rem;color:var(--text-secondary);font-weight:600;">
+      <a href="profile.html" style="font-size:0.85rem;color:var(--text-secondary);font-weight:600; text-decoration:none; margin-right: 0.5rem;" title="Profilime Git">
         👋 ${user.username}
-      </span>
+      </a>
       <a href="create-poll.html" class="btn btn-primary btn-sm" id="nav-create-btn">
         + Anket Oluştur
       </a>

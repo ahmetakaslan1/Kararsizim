@@ -1,4 +1,5 @@
-from django.db.models import F
+from django.db.models import F, Sum
+from django.db.models.functions import Coalesce
 from django.db import IntegrityError
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -19,8 +20,26 @@ class PollListCreateView(generics.ListCreateAPIView):
     GET  /api/polls/ → tüm aktif anketler (herkese açık)
     POST /api/polls/ → yeni anket oluştur (giriş zorunlu)
     """
-    queryset = Poll.objects.filter(is_active=True).select_related('creator').prefetch_related('options')
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        queryset = Poll.objects.filter(is_active=True).select_related('creator').prefetch_related('options')
+        
+        # Kategori Filtrelemesi
+        category = self.request.query_params.get('category')
+        if category and category != 'all':
+            queryset = queryset.filter(category=category)
+            
+        # Sıralama
+        sort = self.request.query_params.get('sort')
+        if sort == 'popular':
+            queryset = queryset.annotate(
+                total_votes=Coalesce(Sum('options__vote_count'), 0)
+            ).order_by('-total_votes', '-created_at')
+        else:
+            queryset = queryset.order_by('-created_at')
+            
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method == 'POST':

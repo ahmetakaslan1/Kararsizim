@@ -2,10 +2,43 @@
    main.js — Kararsız | Ana Feed Sayfası Mantığı
    ============================================================ */
 
+let currentCategory = 'all';
+let currentSort = 'newest';
+
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   updateNavbar();
-  await loadPolls();
+
+  // Filtreleme ve Sıralama Event Listener'ları
+  const sortTabs = document.querySelectorAll('.sort-tab');
+  sortTabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      sortTabs.forEach(t => {
+        t.classList.remove('active');
+        t.style.backgroundColor = 'transparent';
+        t.style.borderColor = 'transparent';
+        t.style.opacity = '0.7';
+      });
+      const target = e.currentTarget;
+      target.classList.add('active');
+      target.style.backgroundColor = 'var(--surface-light)';
+      target.style.borderColor = 'var(--border)';
+      target.style.opacity = '1';
+      
+      currentSort = target.dataset.sort;
+      loadPolls(currentCategory, currentSort);
+    });
+  });
+
+  const catSelect = document.getElementById('category-select');
+  if(catSelect) {
+    catSelect.addEventListener('change', (e) => {
+      currentCategory = e.target.value;
+      loadPolls(currentCategory, currentSort);
+    });
+  }
+
+  await loadPolls(currentCategory, currentSort);
 });
 
 // ---------- Skeleton yükleyici ----------
@@ -46,12 +79,13 @@ function buildPollCard(poll) {
       <p class="poll-question">${poll.question}</p>
     </div>
     <div class="poll-options-preview">${optionsHtml}</div>
-    <div class="poll-meta">
+    <div class="poll-meta" style="flex-wrap: wrap;">
       <div class="poll-meta-avatar" aria-hidden="true">${avatarLetter(creator)}</div>
       <span>@${creator}</span>
       <span>·</span>
       <span>${timeAgo(poll.created_at)}</span>
       <span class="poll-total-votes">🗳️ ${total} oy</span>
+      ${poll.category && poll.category !== 'genel' ? `<span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: auto;">#${poll.category.toUpperCase()}</span>` : ''}
     </div>
   `;
 
@@ -64,13 +98,13 @@ function buildPollCard(poll) {
 }
 
 // ---------- Anketleri yükle ----------
-async function loadPolls() {
+async function loadPolls(category = 'all', sort = 'newest') {
   const grid = document.getElementById('polls-grid');
   const emptyState = document.getElementById('empty-state');
 
   renderSkeletons(5);
 
-  const { ok, data } = await apiGetPolls();
+  const { ok, data } = await apiGetPolls(category, sort);
 
   grid.innerHTML = '';
 

@@ -34,8 +34,9 @@ Thumbs.db
 # Node (frontend)
 node_modules/
 
-# Proje dokümanları (özel)
+# Proje dokümanları 
 Doc/
 
-# Agent kuralları (özel)
+#  kuralları
 .agents/
+.vercel.env

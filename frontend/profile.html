@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profilim — Kararsız</title>
+  <meta name="description" content="Kararsız profiliniz ve anket geçmişiniz." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" role="navigation" aria-label="Ana navigasyon">
+    <a href="index.html" class="navbar-brand" aria-label="Kararsız ana sayfa">
+      Kararsız<span class="brand-dot" aria-hidden="true"></span>
+    </a>
+    <div class="navbar-actions">
+      <div id="nav-auth"></div>
+      <button class="theme-toggle" id="theme-btn" aria-label="Temayı değiştir">🌙</button>
+    </div>
+  </nav>
+
+  <main class="container page-content" role="main">
+    <div style="max-width:800px; margin:0 auto;">
+      
+      <!-- PROFİL BAŞLIK -->
+      <div class="card" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+        <div class="poll-meta-avatar" id="profile-avatar" style="width: 64px; height: 64px; font-size: 1.5rem;">?</div>
+        <div>
+          <h1 id="profile-username" style="margin: 0; font-size: 1.5rem;">Yükleniyor...</h1>
+          <p id="profile-email" style="color: var(--text-muted); margin: 0; font-size: 0.9rem;"></p>
+          <p id="profile-date" style="color: var(--text-muted); margin: 0; font-size: 0.8rem;"></p>
+        </div>
+      </div>
+
+      <!-- SEKMELER -->
+      <div class="feed-controls" style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+        <button class="btn btn-secondary sort-tab active" id="tab-created">📝 Açtığım Anketler</button>
+        <button class="btn btn-secondary sort-tab" id="tab-voted" style="background-color: transparent; border-color: transparent; opacity: 0.7;">🗳️ Oy Verdiğim Anketler</button>
+      </div>
+
+      <!-- ANKET LİSTESİ -->
+      <div id="polls-grid" class="polls-grid">
+        <!-- JS tarafından doldurulur -->
+      </div>
+      
+      <!-- BOŞ DURUM -->
+      <div id="empty-state" class="empty-state" style="display:none;">
+        <div class="empty-state-icon">🤔</div>
+        <h3 id="empty-state-text">Burada henüz bir şey yok.</h3>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <!-- Card builder fonksiyonu için main.js'teki fonksiyonu alıyoruz veya yeniden yazıyoruz -->
+  <script>
+    // main.js'teki buildPollCard fonksiyonunu kopyalıyoruz (modül yapısı olmadığı için)
+    function buildPollCard(poll) {
+      const total = poll.total_votes || 0;
+      const creator = poll.creator?.username || 'anonim';
+      
+      const optionsHtml = poll.options.map(opt => {
+        const pct = total === 0 ? 0 : Math.round((opt.vote_count / total) * 100);
+        const label = opt.text.length > 20 ? opt.text.slice(0, 18) + '…' : opt.text;
+        return `
+          <div class="vote-bar-wrap">
+            <span class="vote-bar-label" title="${opt.text}">${label}</span>
+            <div class="vote-bar-track">
+              <div class="vote-bar-fill" style="width:0%" data-target="${pct}"></div>
+            </div>
+            <span class="vote-bar-pct">${pct}%</span>
+          </div>
+        `;
+      }).join('');
+
+      const card = document.createElement('article');
+      card.className = 'poll-card';
+      card.dataset.pollId = poll.id;
+      card.setAttribute('role', 'button');
+      card.innerHTML = `
+        <div class="poll-card-header">
+          <p class="poll-question">${poll.question}</p>
+        </div>
+        <div class="poll-options-preview">${optionsHtml}</div>
+        <div class="poll-meta" style="flex-wrap: wrap;">
+          <span>@${creator}</span>
+          <span class="poll-total-votes" style="margin-left: auto;">🗳️ ${total} oy</span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => { window.location.href = `poll-detail.html?id=${poll.id}`; });
+      return card;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
+      updateNavbar();
+
+      if (!Auth.isLoggedIn()) {
+        window.location.href = 'login.html?next=profile.html';
+        return;
+      }
+
+      const { ok, data } = await apiGetMe();
+      if (!ok) {
+        showToast('Profil bilgileri alınamadı.', 'error');
+        return;
+      }
+
+      // Profil Bilgilerini Doldur
+      document.getElementById('profile-username').textContent = '@' + data.username;
+      document.getElementById('profile-email').textContent = data.email;
+      document.getElementById('profile-avatar').textContent = data.username.charAt(0).toUpperCase();
+      const date = new Date(data.date_joined).toLocaleDateString('tr-TR');
+      document.getElementById('profile-date').textContent = 'Katılım: ' + date;
+
+      let currentTab = 'created'; // 'created' veya 'voted'
+      const grid = document.getElementById('polls-grid');
+      const emptyState = document.getElementById('empty-state');
+      const emptyStateText = document.getElementById('empty-state-text');
+
+      function renderGrid() {
+        grid.innerHTML = '';
+        const list = currentTab === 'created' ? data.created_polls : data.voted_polls;
+        
+        if (!list || list.length === 0) {
+          emptyStateText.textContent = currentTab === 'created' ? 'Henüz hiç anket açmadın.' : 'Henüz hiçbir ankete oy vermedin.';
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        emptyState.style.display = 'none';
+        list.forEach(poll => {
+          grid.appendChild(buildPollCard(poll));
+        });
+
+        requestAnimationFrame(() => {
+          document.querySelectorAll('.vote-bar-fill').forEach(bar => {
+            bar.style.width = bar.dataset.target + '%';
+          });
+        });
+      }
+
+      // Sekme Kontrolleri
+      const tabCreated = document.getElementById('tab-created');
+      const tabVoted = document.getElementById('tab-voted');
+
+      tabCreated.addEventListener('click', () => {
+        currentTab = 'created';
+        tabCreated.classList.add('active');
+        tabCreated.style.backgroundColor = 'var(--surface-light)';
+        tabCreated.style.opacity = '1';
+        
+        tabVoted.classList.remove('active');
+        tabVoted.style.backgroundColor = 'transparent';
+        tabVoted.style.opacity = '0.7';
+        renderGrid();
+      });
+
+      tabVoted.addEventListener('click', () => {
+        currentTab = 'voted';
+        tabVoted.classList.add('active');
+        tabVoted.style.backgroundColor = 'var(--surface-light)';
+        tabVoted.style.opacity = '1';
+        
+        tabCreated.classList.remove('active');
+        tabCreated.style.backgroundColor = 'transparent';
+        tabCreated.style.opacity = '0.7';
+        renderGrid();
+      });
+
+      // İlk Render
+      renderGrid();
+    });
+  </script>
+</body>
+</html>

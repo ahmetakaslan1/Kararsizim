@@ -50,6 +50,24 @@
   <main class="container page-content" role="main">
     <span class="sr-only">kararsizim kararver kararsiz app</span>
     
+    <!-- FİLTRLEME VE SIRALAMA KONTROLLERİ -->
+    <div class="feed-controls" aria-label="Anket filtreleri" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+      <div class="sort-tabs" style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-secondary sort-tab active" data-sort="newest" style="background-color: var(--surface-light); border-color: var(--border);">⏱️ En Yeniler</button>
+        <button class="btn btn-secondary sort-tab" data-sort="popular" style="background-color: transparent; border-color: transparent; opacity: 0.7;">🔥 Trendler</button>
+      </div>
+      <div class="category-filter">
+        <select id="category-select" class="form-control" aria-label="Kategori Seç" style="min-width: 200px;">
+          <option value="all">Tüm Kategoriler</option>
+          <option value="genel">Genel</option>
+          <option value="kariyer">Kariyer</option>
+          <option value="iliski">İlişki</option>
+          <option value="teknoloji">Teknoloji</option>
+          <option value="alisveris">Alışveriş</option>
+          <option value="diger">Diğer</option>
+        </select>
+      </div>
+    </div>
     <div id="polls-grid" class="polls-grid" aria-label="Anket listesi" aria-live="polite">
       <!-- JS tarafından doldurulur -->
     </div>

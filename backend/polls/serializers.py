@@ -18,7 +18,7 @@ class PollListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poll
-        fields = ('id', 'question', 'creator', 'created_at', 'is_active', 'options', 'total_votes')
+        fields = ('id', 'question', 'category', 'creator', 'created_at', 'is_active', 'options', 'total_votes')
 
     def get_total_votes(self, obj):
         return sum(opt.vote_count for opt in obj.options.all())
@@ -41,7 +41,7 @@ class PollCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Poll
-        fields = ('question', 'options')
+        fields = ('question', 'category', 'options')
 
     def validate_options(self, options):
         # Boş seçenek ve tekrar kontrolü

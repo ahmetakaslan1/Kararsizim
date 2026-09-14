@@ -121,11 +121,17 @@ async function apiLogout() {
   Auth.clear();
 }
 
+async function apiGetMe() {
+  const res = await apiFetch('/auth/me/');
+  if (!res || !res.ok) return { ok: false, data: null };
+  return { ok: true, data: await res.json() };
+}
+
 // ============================================================
 // POLL ENDPOİNTLERİ
 // ============================================================
-async function apiGetPolls() {
-  const res = await apiFetch('/polls/');
+async function apiGetPolls(category = 'all', sort = 'newest') {
+  const res = await apiFetch(`/polls/?category=${category}&sort=${sort}`);
   if (!res || !res.ok) return { ok: false, data: [] };
   return { ok: true, data: await res.json() };
 }
@@ -136,10 +142,10 @@ async function apiGetPoll(id) {
   return { ok: true, data: await res.json() };
 }
 
-async function apiCreatePoll(question, options) {
+async function apiCreatePoll(question, category, options) {
   const res = await apiFetch('/polls/', {
     method: 'POST',
-    body: JSON.stringify({ question, options }),
+    body: JSON.stringify({ question, category, options }),
   });
   const data = await res.json();
   return { ok: res.ok, data, status: res.status };
