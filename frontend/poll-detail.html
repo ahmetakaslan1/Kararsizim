@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anket — Kararsız</title>
+  <meta name="description" content="Bu ankete oy ver ve karar vermeye yardım et." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" role="navigation" aria-label="Ana navigasyon">
+    <a href="index.html" class="navbar-brand" aria-label="Kararsız ana sayfa">
+      Kararsız<span class="brand-dot" aria-hidden="true"></span>
+    </a>
+    <div class="navbar-actions">
+      <div id="nav-auth"></div>
+      <button class="theme-toggle" id="theme-btn" aria-label="Temayı değiştir">🌙</button>
+    </div>
+  </nav>
+
+  <main class="container page-content" role="main">
+
+    <!-- GERİ -->
+    <a href="index.html" class="btn btn-ghost btn-sm" style="margin-bottom:1.5rem;display:inline-flex;">
+      ← Tüm Anketler
+    </a>
+
+    <!-- YÜKLEME -->
+    <div id="loading-state" aria-live="polite" aria-label="Yükleniyor">
+      <div class="skeleton" style="height:36px;width:70%;margin-bottom:1rem;"></div>
+      <div class="skeleton" style="height:20px;width:40%;margin-bottom:2rem;"></div>
+      <div class="skeleton" style="height:64px;border-radius:14px;margin-bottom:0.75rem;"></div>
+      <div class="skeleton" style="height:64px;border-radius:14px;margin-bottom:0.75rem;"></div>
+      <div class="skeleton" style="height:64px;border-radius:14px;"></div>
+    </div>
+
+    <!-- HATA -->
+    <div id="error-state" style="display:none;" role="alert">
+      <div class="empty-state">
+        <div class="empty-state-icon" aria-hidden="true">😕</div>
+        <h3>Anket bulunamadı</h3>
+        <p>Bu anket silinmiş veya hiç var olmamış olabilir.</p>
+        <br />
+        <a href="index.html" class="btn btn-primary">Ana Sayfaya Dön</a>
+      </div>
+    </div>
+
+    <!-- ANKET İÇERİĞİ -->
+    <div id="poll-content" style="display:none;" aria-live="polite">
+
+      <div class="poll-detail-hero">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+          <span class="badge badge-accent" id="poll-status-badge">Aktif</span>
+        </div>
+        <h1 class="poll-detail-question" id="poll-question-text"></h1>
+        <div class="poll-meta" style="margin-top:0.75rem;">
+          <div class="poll-meta-avatar" id="poll-creator-avatar" aria-hidden="true"></div>
+          <span id="poll-creator-name" style="font-weight:600;color:var(--text-secondary);"></span>
+          <span>·</span>
+          <span id="poll-time" style="color:var(--text-muted);"></span>
+          <span class="poll-total-votes" id="poll-total" style="margin-left:auto;"></span>
+        </div>
+      </div>
+
+      <!-- OY VERİLDİ BİLDİRİMİ -->
+      <div id="voted-notice" class="voted-notice" style="display:none;" role="status">
+        ✅ Bu ankete oy verdiniz.
+      </div>
+
+      <!-- SEÇENEKLER -->
+      <div id="poll-options" style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:2rem;" role="group" aria-label="Anket seçenekleri">
+        <!-- JS tarafından doldurulur -->
+      </div>
+
+      <!-- PAYLAŞ -->
+      <div style="display:flex;align-items:center;gap:0.75rem;padding:1.25rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);">
+        <div style="flex:1;">
+          <p style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.15rem;">Bu anketi paylaş</p>
+          <p style="font-size:0.78rem;color:var(--text-muted);">Bağlantıyı kopyalayarak arkadaşlarına gönder</p>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="share-btn">
+          🔗 Kopyala
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
+      updateNavbar();
+
+      const params = new URLSearchParams(window.location.search);
+      const pollId = params.get('id');
+
+      if (!pollId || isNaN(pollId)) {
+        showError();
+        return;
+      }
+
+      const { ok, data: poll } = await apiGetPoll(pollId);
+
+      if (!ok || !poll) {
+        showError();
+        return;
+      }
+
+      renderPoll(poll);
+    });
+
+    function showError() {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('error-state').style.display = 'block';
+    }
+
+    function renderPoll(poll) {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('poll-content').style.display  = 'block';
+
+      // Meta
+      document.title = `${poll.question} — Kararsız`;
+      document.getElementById('poll-question-text').textContent = poll.question;
+
+      const creator = poll.creator?.username || 'anonim';
+      document.getElementById('poll-creator-avatar').textContent = avatarLetter(creator);
+      document.getElementById('poll-creator-name').textContent   = `@${creator}`;
+      document.getElementById('poll-time').textContent           = timeAgo(poll.created_at);
+      document.getElementById('poll-total').textContent          = `🗳️ ${poll.total_votes} oy`;
+
+      // Oy verildi mi?
+      const myVotedOption = hasVoted(poll.id);
+      if (myVotedOption) {
+        document.getElementById('voted-notice').style.display = 'flex';
+      }
+
+      renderOptions(poll, myVotedOption);
+
+      // Paylaş butonu
+      document.getElementById('share-btn').addEventListener('click', () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+          showToast('Bağlantı kopyalandı!', 'success');
+        }).catch(() => {
+          showToast('Kopyalanamadı.', 'error');
+        });
+      });
+    }
+
+    function renderOptions(poll, votedOptionId) {
+      const container  = document.getElementById('poll-options');
+      const total      = poll.total_votes || 0;
+      const alreadyVoted = !!votedOptionId;
+
+      container.innerHTML = '';
+
+      poll.options.forEach(opt => {
+        const pct       = calcPercent(opt.vote_count, total);
+        const isMyVote  = String(opt.id) === String(votedOptionId);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `vote-option${alreadyVoted ? ' voted' : ''}${isMyVote ? ' voted-selected' : ''}`;
+        btn.disabled  = alreadyVoted;
+        btn.setAttribute('aria-label', `${opt.text}${alreadyVoted ? ` — %${pct}` : ''}`);
+        btn.dataset.optionId = opt.id;
+
+        btn.innerHTML = `
+          <div class="option-bar-bg" style="width:${alreadyVoted ? pct : 0}%"></div>
+          <span class="option-text">${opt.text}${isMyVote ? ' ✅' : ''}</span>
+          <span class="option-pct">${pct}%</span>
+        `;
+
+        if (!alreadyVoted) {
+          btn.addEventListener('click', () => castVote(poll.id, opt.id));
+        }
+
+        container.appendChild(btn);
+      });
+
+      // Bar animasyonu
+      if (alreadyVoted) {
+        requestAnimationFrame(() => {
+          poll.options.forEach(opt => {
+            const bar = container.querySelector(`[data-option-id="${opt.id}"] .option-bar-bg`);
+            if (bar) {
+              bar.style.transition = 'width 0.8s cubic-bezier(0.4,0,0.2,1)';
+              const pct = calcPercent(opt.vote_count, total);
+              setTimeout(() => { bar.style.width = pct + '%'; }, 100);
+            }
+          });
+        });
+      }
+    }
+
+    async function castVote(pollId, optionId) {
+      // Tüm butonları devre dışı bırak
+      document.querySelectorAll('.vote-option').forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+      });
+
+      const { ok, data, status } = await apiVote(pollId, optionId);
+
+      if (ok) {
+        markVoted(pollId, optionId);
+        showToast('Oyunuz kaydedildi! 🎉', 'success');
+        // Güncel verilerle yeniden çiz
+        renderOptions(data, optionId);
+        document.getElementById('voted-notice').style.display = 'flex';
+        document.getElementById('poll-total').textContent = `🗳️ ${data.total_votes} oy`;
+      } else if (status === 409) {
+        showToast('Bu ankete zaten oy verdiniz.', 'info');
+        markVoted(pollId, optionId);
+        document.querySelectorAll('.vote-option').forEach(btn => {
+          btn.disabled = true;
+          btn.style.opacity = '';
+          btn.classList.add('voted');
+        });
+      } else {
+        showToast('Bir hata oluştu. Lütfen tekrar deneyin.', 'error');
+        document.querySelectorAll('.vote-option').forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = '';
+        });
+      }
+    }
+  </script>
+</body>
+</html>

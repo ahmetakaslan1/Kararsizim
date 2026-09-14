@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kayıt Ol — Kararsız</title>
+  <meta name="description" content="Kararsız'a kayıt ol ve kendi anketlerini oluşturmaya başla." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" role="navigation" aria-label="Ana navigasyon">
+    <a href="index.html" class="navbar-brand" aria-label="Kararsız ana sayfa">
+      Kararsız<span class="brand-dot" aria-hidden="true"></span>
+    </a>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="theme-btn" aria-label="Temayı değiştir">🌙</button>
+    </div>
+  </nav>
+
+  <main class="auth-page" role="main">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">Kararsız<span>.</span></div>
+        <h1 class="auth-title">Hesap Oluştur</h1>
+        <p class="auth-subtitle">Anket oluşturmak için kayıt ol. Oy vermek için şart değil.</p>
+      </div>
+
+      <form id="register-form" novalidate>
+        <div class="form-group">
+          <label for="reg-username" class="form-label">Kullanıcı Adı</label>
+          <input
+            type="text"
+            id="reg-username"
+            class="form-input"
+            placeholder="ör. kararsiz_ahmet"
+            autocomplete="username"
+            maxlength="50"
+            required
+          />
+          <span id="reg-username-error" class="form-error" role="alert"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-email" class="form-label">E-posta</label>
+          <input
+            type="email"
+            id="reg-email"
+            class="form-input"
+            placeholder="ornek@mail.com"
+            autocomplete="email"
+            required
+          />
+          <span id="reg-email-error" class="form-error" role="alert"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password" class="form-label">Parola</label>
+          <input
+            type="password"
+            id="reg-password"
+            class="form-input"
+            placeholder="En az 8 karakter"
+            autocomplete="new-password"
+            minlength="8"
+            required
+          />
+          <span id="reg-password-error" class="form-error" role="alert"></span>
+        </div>
+
+        <span id="reg-general-error" class="form-error" style="margin-bottom:0.75rem" role="alert"></span>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="reg-submit-btn">
+          Kayıt Ol
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Zaten hesabın var mı?
+        <a href="login.html" id="login-link">Giriş Yap</a>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+
+      // Zaten giriş yapmışsa ana sayfaya yönlendir
+      if (Auth.isLoggedIn()) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      const form = document.getElementById('register-form');
+      const submitBtn = document.getElementById('reg-submit-btn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearFormErrors('register-form');
+
+        const username = document.getElementById('reg-username').value.trim();
+        const email    = document.getElementById('reg-email').value.trim();
+        const password = document.getElementById('reg-password').value;
+
+        // Basit client-side validasyon
+        let hasError = false;
+        if (!username) { showFormError('reg-username', 'Kullanıcı adı zorunlu.'); hasError = true; }
+        if (!email)    { showFormError('reg-email', 'E-posta zorunlu.'); hasError = true; }
+        if (password.length < 8) { showFormError('reg-password', 'Parola en az 8 karakter olmalı.'); hasError = true; }
+        if (hasError) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Kaydediliyor…';
+
+        const { ok, errors } = await apiRegister(email, username, password);
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Kayıt Ol';
+
+        if (ok) {
+          showToast('Hoş geldin! Yönlendiriliyorsun…', 'success');
+          setTimeout(() => { window.location.href = 'index.html'; }, 800);
+        } else {
+          // Backend hata mesajları
+          if (errors.username) showFormError('reg-username', errors.username[0]);
+          if (errors.email)    showFormError('reg-email',    errors.email[0]);
+          if (errors.password) showFormError('reg-password', errors.password[0]);
+          if (errors.non_field_errors || errors.detail) {
+            const errEl = document.getElementById('reg-general-error');
+            errEl.textContent = errors.non_field_errors?.[0] || errors.detail;
+            errEl.classList.add('visible');
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kararsız — Karar veremeyenler için anket platformu</title>
+  <meta name="description" content="Kararsız mısın? Anket oluştur, oyları gör, kararını ver. Herkes oy verebilir." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" role="navigation" aria-label="Ana navigasyon">
+    <a href="index.html" class="navbar-brand" aria-label="Kararsız ana sayfa">
+      Kararsız<span class="brand-dot" aria-hidden="true"></span>
+    </a>
+    <div class="navbar-actions">
+      <div id="nav-auth"></div>
+      <button class="theme-toggle" id="theme-btn" aria-label="Temayı değiştir">🌙</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="feed-hero" role="banner">
+    <div class="container">
+      <h1>Ne yapalım <span>bilemiyorum</span> diyenler için</h1>
+      <p>Karar veremediklerini herkesin oyuna bırak. Üye olmana gerek yok — oy vermek herkese açık.</p>
+      <div id="hero-cta"></div>
+    </div>
+  </header>
+
+  <!-- POLLS FEED -->
+  <main class="container page-content" role="main">
+    <div id="polls-grid" class="polls-grid" aria-label="Anket listesi" aria-live="polite">
+      <!-- JS tarafından doldurulur -->
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="empty-state" class="empty-state" style="display:none;" aria-live="polite">
+      <div class="empty-state-icon" aria-hidden="true">🤔</div>
+      <h3>Henüz hiç anket yok</h3>
+      <p>İlk anketi sen oluştur!</p>
+      <br />
+      <a href="create-poll.html" class="btn btn-primary">Anket Oluştur</a>
+    </div>
+  </main>
+
+  <!-- TOAST -->
+  <div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Hero CTA — auth durumuna göre
+    document.addEventListener('DOMContentLoaded', () => {
+      const cta = document.getElementById('hero-cta');
+      if (Auth.isLoggedIn()) {
+        cta.innerHTML = `<a href="create-poll.html" class="btn btn-primary btn-lg" id="hero-create-btn">✨ Anket Oluştur</a>`;
+      } else {
+        cta.innerHTML = `
+          <a href="register.html" class="btn btn-primary btn-lg" id="hero-register-btn">Hemen Başla</a>
+          <a href="login.html" class="btn btn-secondary btn-lg" id="hero-login-btn" style="margin-left:0.75rem">Giriş Yap</a>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

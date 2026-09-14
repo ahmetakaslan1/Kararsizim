@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giriş Yap — Kararsız</title>
+  <meta name="description" content="Kararsız hesabına giriş yap ve anketlerini yönet." />
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" role="navigation" aria-label="Ana navigasyon">
+    <a href="index.html" class="navbar-brand" aria-label="Kararsız ana sayfa">
+      Kararsız<span class="brand-dot" aria-hidden="true"></span>
+    </a>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="theme-btn" aria-label="Temayı değiştir">🌙</button>
+    </div>
+  </nav>
+
+  <main class="auth-page" role="main">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">Kararsız<span>.</span></div>
+        <h1 class="auth-title">Tekrar Hoş Geldin</h1>
+        <p class="auth-subtitle">Hesabına giriş yap ve anket oluşturmaya devam et.</p>
+      </div>
+
+      <form id="login-form" novalidate>
+        <div class="form-group">
+          <label for="login-email" class="form-label">E-posta</label>
+          <input
+            type="email"
+            id="login-email"
+            class="form-input"
+            placeholder="ornek@mail.com"
+            autocomplete="email"
+            required
+          />
+          <span id="login-email-error" class="form-error" role="alert"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">Parola</label>
+          <input
+            type="password"
+            id="login-password"
+            class="form-input"
+            placeholder="Parolanı gir"
+            autocomplete="current-password"
+            required
+          />
+          <span id="login-password-error" class="form-error" role="alert"></span>
+        </div>
+
+        <span id="login-general-error" class="form-error" style="margin-bottom:0.75rem" role="alert"></span>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="login-submit-btn">
+          Giriş Yap
+        </button>
+      </form>
+
+      <div class="auth-divider">veya</div>
+
+      <div class="auth-footer">
+        Hesabın yok mu?
+        <a href="register.html" id="register-link">Kayıt Ol</a>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+
+      if (Auth.isLoggedIn()) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      const form = document.getElementById('login-form');
+      const submitBtn = document.getElementById('login-submit-btn');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearFormErrors('login-form');
+
+        const email    = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        let hasError = false;
+        if (!email)    { showFormError('login-email', 'E-posta zorunlu.'); hasError = true; }
+        if (!password) { showFormError('login-password', 'Parola zorunlu.'); hasError = true; }
+        if (hasError) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Giriş yapılıyor…';
+
+        const { ok, errors } = await apiLogin(email, password);
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Giriş Yap';
+
+        if (ok) {
+          showToast('Başarıyla giriş yapıldı!', 'success');
+          const redirect = new URLSearchParams(window.location.search).get('next') || 'index.html';
+          setTimeout(() => { window.location.href = redirect; }, 600);
+        } else {
+          const errEl = document.getElementById('login-general-error');
+          const msg = errors.detail || errors.non_field_errors?.[0] || 'E-posta veya parola hatalı.';
+          errEl.textContent = msg;
+          errEl.classList.add('visible');
+          document.getElementById('login-password').value = '';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
