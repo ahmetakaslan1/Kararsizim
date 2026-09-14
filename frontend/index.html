@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kararsız — Karar veremeyenler için anket platformu</title>
   <meta name="description" content="Kararsız mısın? Anket oluştur, oyları gör, kararını ver. Herkes oy verebilir." />
+  <meta name="keywords" content="kararsizim, kararver,  kararsiz app, ne yapsam karar veremiyorum" />
+  
+  <style>
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border-width: 0;
+    }
+  </style>
+
   <link rel="stylesheet" href="css/theme.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -32,6 +48,8 @@
 
   <!-- POLLS FEED -->
   <main class="container page-content" role="main">
+    <span class="sr-only">kararsizim kararver kararsiz app</span>
+    
     <div id="polls-grid" class="polls-grid" aria-label="Anket listesi" aria-live="polite">
       <!-- JS tarafından doldurulur -->
     </div>
