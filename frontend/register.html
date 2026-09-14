@@ -126,8 +126,9 @@
         submitBtn.textContent = 'Kayıt Ol';
 
         if (ok) {
-          showToast('Hoş geldin! Yönlendiriliyorsun…', 'success');
-          setTimeout(() => { window.location.href = 'index.html'; }, 800);
+          showToast('Kayıt başarılı. Lütfen e-postanı kontrol ederek hesabını onayla.', 'success');
+          // Kullanıcıyı hemen login'e yönlendirebilir veya burada bırakabiliriz
+          setTimeout(() => { window.location.href = 'login.html'; }, 3000);
         } else {
           // Backend hata mesajları
           if (errors.username) showFormError('reg-username', errors.username[0]);

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-posta Doğrulama — Kararsız</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <nav class="navbar" role="navigation">
+    <a href="index.html" class="navbar-brand">Kararsız<span class="brand-dot"></span></a>
+    <div class="navbar-actions">
+      <button class="theme-toggle" id="theme-btn">🌙</button>
+    </div>
+  </nav>
+
+  <main class="auth-page" role="main">
+    <div class="auth-card" style="text-align: center;">
+      <div class="auth-header">
+        <h1 class="auth-title">E-posta Doğrulanıyor</h1>
+        <p class="auth-subtitle" id="verify-message">Lütfen bekleyin, hesabınız onaylanıyor...</p>
+      </div>
+      <div id="verify-actions" style="display: none; margin-top: 1rem;">
+        <a href="login.html" class="btn btn-primary btn-full btn-lg">Giriş Yap</a>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
+      const params = new URLSearchParams(window.location.search);
+      const uid = params.get('uid');
+      const token = params.get('token');
+      const msgEl = document.getElementById('verify-message');
+      const actionsEl = document.getElementById('verify-actions');
+
+      if (!uid || !token) {
+        msgEl.textContent = 'Geçersiz veya eksik doğrulama bağlantısı.';
+        return;
+      }
+
+      const { ok, data } = await apiVerifyEmail(uid, token);
+      if (ok) {
+        msgEl.textContent = 'Hesabınız başarıyla doğrulandı! Aramıza hoş geldin.';
+        actionsEl.style.display = 'block';
+        showToast('Doğrulama başarılı!', 'success');
+      } else {
+        msgEl.textContent = data.detail || 'Doğrulama başarısız. Bağlantının süresi dolmuş olabilir.';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,29 +1,139 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth import get_user_model
 
+from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
+from polls.serializers import PollListSerializer
+from polls.models import Poll, Vote
+
+User = get_user_model()
 
 class RegisterView(APIView):
-    """POST /api/auth/register/ — Yeni kullanıcı kaydı."""
+    """POST /api/auth/register/ — Yeni kullanıcı kaydı ve doğrulama e-postası gönderimi."""
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # Token üret
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'username': user.username,
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-            }, status=status.HTTP_201_CREATED)
+            # Hesabı pasif yapıyoruz
+            user.is_active = False
+            user.save()
+            
+            # E-posta onay token'ı ve linki üret
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            verification_link = f"{settings.FRONTEND_URL}/verify-email.html?uid={uid}&token={token}"
+            
+            send_mail(
+                'Kararsızım - E-posta Doğrulama',
+                f'Merhaba {user.username},\n\nHesabınızı doğrulamak için aşağıdaki bağlantıya tıklayın:\n{verification_link}\n\nİyi günler!',
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            
+            return Response({'detail': 'Kayıt başarılı. Lütfen e-postanızı kontrol ederek hesabınızı onaylayın.'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class VerifyEmailView(APIView):
+    """POST /api/auth/verify-email/ — E-posta onaylama işlemi."""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        uidb64 = request.data.get('uid')
+        token = request.data.get('token')
+        
+        if not uidb64 or not token:
+            return Response({'detail': 'UID ve Token gereklidir.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            
+            # Hoş geldin maili
+            send_mail(
+                'Aramıza Hoş Geldin!',
+                f'Merhaba {user.username},\n\nHesabınız başarıyla onaylandı. Kararsızım platformuna hoş geldin!\n\nİyi günler!',
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            
+            return Response({'detail': 'Hesabınız başarıyla onaylandı.'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'Geçersiz veya süresi dolmuş bağlantı.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetRequestView(APIView):
+    """POST /api/auth/password-reset/ — Şifre sıfırlama e-postası gönderir."""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'detail': 'E-posta adresi gereklidir.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # Güvenlik amacıyla e-posta bulunamasa bile hata dönmüyoruz.
+            return Response({'detail': 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'}, status=status.HTTP_200_OK)
+            
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        reset_link = f"{settings.FRONTEND_URL}/reset-password.html?uid={uid}&token={token}"
+        
+        send_mail(
+            'Kararsızım - Şifre Sıfırlama',
+            f'Merhaba {user.username},\n\nŞifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın:\n{reset_link}\n\nİyi günler!',
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+        
+        return Response({'detail': 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'}, status=status.HTTP_200_OK)
+
+
+class PasswordResetConfirmView(APIView):
+    """POST /api/auth/password-reset-confirm/ — Yeni şifreyi ayarlar."""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        uidb64 = request.data.get('uid')
+        token = request.data.get('token')
+        new_password = request.data.get('new_password')
+        
+        if not uidb64 or not token or not new_password:
+            return Response({'detail': 'Tüm alanlar (uid, token, new_password) gereklidir.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.set_password(new_password)
+            user.save()
+            return Response({'detail': 'Şifreniz başarıyla değiştirildi. Şimdi giriş yapabilirsiniz.'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'Geçersiz veya süresi dolmuş bağlantı.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LoginView(TokenObtainPairView):
@@ -45,10 +155,6 @@ class LogoutView(APIView):
             return Response({'detail': 'Geçersiz token.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-from rest_framework.permissions import IsAuthenticated
-from polls.serializers import PollListSerializer
-from polls.models import Poll, Vote
-
 class UserMeView(APIView):
     """GET /api/auth/me/ — Profil bilgileri, açılan ve oylanan anketler."""
     permission_classes = [IsAuthenticated]
@@ -63,7 +169,7 @@ class UserMeView(APIView):
         
         return Response({
             'username': user.username,
-            'email': user.email, # Sadece kullanıcının kendisine döner
+            'email': user.email,
             'date_joined': user.date_joined,
             'created_polls': PollListSerializer(created_polls, many=True).data,
             'voted_polls': PollListSerializer(voted_polls, many=True).data,

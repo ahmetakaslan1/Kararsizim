@@ -91,10 +91,37 @@ async function apiRegister(email, username, password) {
   });
   const data = await res.json();
   if (res.ok) {
-    Auth.save(data.access, data.refresh, data.username);
+    // Token dönmez, hesap henüz inaktif
     return { ok: true, data };
   }
   return { ok: false, errors: data };
+}
+
+async function apiVerifyEmail(uid, token) {
+  const res = await apiFetch('/auth/verify-email/', {
+    method: 'POST',
+    body: JSON.stringify({ uid, token }),
+  });
+  const data = await res.json();
+  return { ok: res.ok, data };
+}
+
+async function apiPasswordResetRequest(email) {
+  const res = await apiFetch('/auth/password-reset/', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  return { ok: res.ok, data };
+}
+
+async function apiPasswordResetConfirm(uid, token, new_password) {
+  const res = await apiFetch('/auth/password-reset-confirm/', {
+    method: 'POST',
+    body: JSON.stringify({ uid, token, new_password }),
+  });
+  const data = await res.json();
+  return { ok: res.ok, data };
 }
 
 async function apiLogin(email, password) {

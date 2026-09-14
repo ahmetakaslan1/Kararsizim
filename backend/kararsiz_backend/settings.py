@@ -134,3 +134,15 @@ CORS_ALLOW_CREDENTIALS = True
 # Geliştirme ortamında file:// protokolüne izin ver
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
+
+# Email (Resend SMTP) Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.resend.com'
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 465))
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'resend')
+EMAIL_HOST_PASSWORD = os.environ.get('RESEND_API_KEY', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'info@asln.com.tr')
+
+# Frontend URL for email links
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://127.0.0.1:5500/frontend')
