@@ -45,14 +45,18 @@
         <div class="form-group" style="position: relative;">
           <label for="login-password" class="form-label">Parola</label>
           <a href="forgot-password.html" style="position: absolute; right: 0; top: 0; font-size: 0.85rem; color: var(--primary); text-decoration: none;">Şifremi unuttum?</a>
-          <input
-            type="password"
-            id="login-password"
-            class="form-input"
-            placeholder="Parolanı gir"
-            autocomplete="current-password"
-            required
-          />
+          <div style="position: relative;">
+            <input
+              type="password"
+              id="login-password"
+              class="form-input"
+              placeholder="Parolanı gir"
+              autocomplete="current-password"
+              required
+              style="padding-right: 2.5rem;"
+            />
+            <button type="button" onclick="togglePasswordVisibility('login-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-muted);" aria-label="Şifreyi Göster" title="Şifreyi Göster">👁️</button>
+          </div>
           <span id="login-password-error" class="form-error" role="alert"></span>
         </div>
 
@@ -122,6 +126,21 @@
         }
       });
     });
+
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "🙈";
+        btn.setAttribute('aria-label', 'Şifreyi Gizle');
+        btn.setAttribute('title', 'Şifreyi Gizle');
+      } else {
+        input.type = "password";
+        btn.textContent = "👁️";
+        btn.setAttribute('aria-label', 'Şifreyi Göster');
+        btn.setAttribute('title', 'Şifreyi Göster');
+      }
+    }
   </script>
 </body>
 </html>

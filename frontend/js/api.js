@@ -215,11 +215,33 @@ async function apiGetUsers() {
 }
 
 async function apiDeleteUser(userId) {
-  const res = await apiFetch(`/auth/admin/users/${userId}/`, {
-    method: 'DELETE',
+  try {
+    const res = await apiFetch(`/auth/admin/users/${userId}/`, {
+      method: 'DELETE',
+    });
+    if (res && res.status === 204) {
+      return { ok: true };
+    }
+    return { ok: false, status: res ? res.status : null };
+  } catch (error) {
+    console.error("apiDeleteUser Hatası:", error);
+    return { ok: false, status: 500 };
+  }
+}
+
+async function apiGetAdminUserPolls(userId) {
+  const res = await apiFetch(`/auth/admin/users/${userId}/polls/`);
+  if (!res || !res.ok) return { ok: false, data: [] };
+  return { ok: true, data: await res.json() };
+}
+
+async function apiBulkDeletePolls(pollIds) {
+  const res = await apiFetch(`/polls/admin/bulk-delete/`, {
+    method: 'POST',
+    body: JSON.stringify({ poll_ids: pollIds }),
   });
-  if (res && res.status === 204) {
-    return { ok: true };
+  if (res && res.ok) {
+    return { ok: true, data: await res.json() };
   }
   return { ok: false, status: res ? res.status : null };
 }

@@ -43,6 +43,50 @@
       font-size: 0.75rem;
       font-weight: 600;
     }
+    
+    /* Modal Stilleri */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      width: 90%;
+      max-width: 600px;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    .modal-body {
+      overflow-y: auto;
+      flex: 1;
+    }
+    .poll-list-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+    }
+    .poll-list-item:last-child { border-bottom: none; }
+    .poll-list-item input[type="checkbox"] { transform: scale(1.2); cursor: pointer; }
+    .poll-list-item div { flex: 1; }
   </style>
 </head>
 <body>
@@ -80,6 +124,27 @@
     </table>
 
   </main>
+
+  <!-- Anket Yönetimi Modal -->
+  <div class="modal-backdrop" id="pollsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="font-size: 1.2rem; font-weight: 700;" id="modalTitle">Anketler</h2>
+        <button class="btn btn-sm" onclick="closePollsModal()" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer;">✕</button>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; background: rgba(0,0,0,0.1); padding: 0.5rem; border-radius: var(--radius-sm);">
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-weight: 600;">
+          <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" style="transform: scale(1.2);"> Tümünü Seç
+        </label>
+        <button class="btn btn-sm" onclick="deleteSelectedPolls()" style="background-color: var(--danger); border-color: var(--danger); color: white;">🗑️ Seçilileri Sil</button>
+      </div>
+      
+      <div class="modal-body" id="modalPollsList">
+        <!-- Anketler buraya yüklenecek -->
+      </div>
+    </div>
+  </div>
 
   <div class="toast-container" id="toast-container"></div>
 
@@ -131,7 +196,12 @@
           <td><strong>@${user.username}</strong> ${adminBadge}</td>
           <td>${emailInfo}</td>
           <td>${date}</td>
-          <td>${user.polls_count}</td>
+          <td>
+            ${user.polls_count > 0 
+              ? `<button class="btn btn-sm" onclick="openPollsModal(${user.id}, '${user.username}')" style="background:var(--primary); color:white; border:none; padding: 0.2rem 0.5rem;">${user.polls_count} Anket (Yönet)</button>`
+              : `0 Anket`
+            }
+          </td>
           <td>${deleteBtn}</td>
         `;
         tbody.appendChild(tr);
@@ -144,6 +214,95 @@
         if (ok) {
           showToast('Kullanıcı ve ona ait her şey silindi.', 'success');
           loadUsers(); // Tabloyu yenile
+        } else {
+          showToast('Silme işlemi başarısız oldu.', 'error');
+        }
+      }
+    }
+
+    // --- Modal Fonksiyonları ---
+    let currentUserId = null;
+
+    async function openPollsModal(userId, username) {
+      currentUserId = userId;
+      document.getElementById('modalTitle').innerText = `@${username} kullanıcısının Anketleri`;
+      document.getElementById('pollsModal').style.display = 'flex';
+      document.getElementById('selectAllCheckbox').checked = false;
+      const listDiv = document.getElementById('modalPollsList');
+      listDiv.innerHTML = '<p style="text-align:center;">Yükleniyor...</p>';
+
+      const { ok, data } = await apiGetAdminUserPolls(userId);
+      if (!ok) {
+        listDiv.innerHTML = '<p style="color:var(--danger); text-align:center;">Anketler yüklenemedi.</p>';
+        return;
+      }
+
+      if (data.length === 0) {
+        listDiv.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Hiç anket bulunmuyor.</p>';
+        return;
+      }
+
+      listDiv.innerHTML = '';
+      data.forEach(poll => {
+        const date = new Date(poll.created_at).toLocaleDateString('tr-TR');
+        listDiv.innerHTML += `
+          <div class="poll-list-item">
+            <input type="checkbox" class="poll-checkbox" value="${poll.id}">
+            <div>
+              <div style="font-weight:600; margin-bottom:0.25rem;">${poll.question}</div>
+              <div style="font-size:0.8rem; color:var(--text-muted); display:flex; gap:1rem;">
+                <span>🗓️ ${date}</span>
+                <span>🗳️ Oy: ${poll.total_votes || 0}</span>
+                <span>🏷️ ${poll.category}</span>
+              </div>
+            </div>
+            <button class="btn btn-sm" onclick="deleteSinglePoll(${poll.id})" style="background:transparent; color:var(--danger); border:1px solid var(--danger); padding:0.2rem 0.5rem;">Sil</button>
+          </div>
+        `;
+      });
+    }
+
+    function closePollsModal() {
+      document.getElementById('pollsModal').style.display = 'none';
+      currentUserId = null;
+    }
+
+    function toggleSelectAll(checkbox) {
+      const checkboxes = document.querySelectorAll('.poll-checkbox');
+      checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    }
+
+    async function deleteSinglePoll(pollId) {
+      if (confirm('Bu anketi kalıcı olarak silmek istediğinize emin misiniz?')) {
+        const { ok } = await apiBulkDeletePolls([pollId]);
+        if (ok) {
+          showToast('Anket silindi.', 'success');
+          // Listeyi yenile
+          const username = document.getElementById('modalTitle').innerText.split(' ')[0].replace('@', '');
+          openPollsModal(currentUserId, username);
+          loadUsers(); // Ana sayfadaki sayaç da güncellensin
+        } else {
+          showToast('Silme işlemi başarısız oldu.', 'error');
+        }
+      }
+    }
+
+    async function deleteSelectedPolls() {
+      const checkboxes = document.querySelectorAll('.poll-checkbox:checked');
+      if (checkboxes.length === 0) {
+        alert('Lütfen silmek için en az bir anket seçin.');
+        return;
+      }
+
+      if (confirm(`Seçili ${checkboxes.length} anketi kalıcı olarak silmek istediğinize emin misiniz?`)) {
+        const pollIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        const { ok } = await apiBulkDeletePolls(pollIds);
+        
+        if (ok) {
+          showToast(`${checkboxes.length} anket başarıyla silindi.`, 'success');
+          const username = document.getElementById('modalTitle').innerText.split(' ')[0].replace('@', '');
+          openPollsModal(currentUserId, username);
+          loadUsers();
         } else {
           showToast('Silme işlemi başarısız oldu.', 'error');
         }

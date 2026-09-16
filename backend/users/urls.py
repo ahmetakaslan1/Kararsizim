@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     RegisterView, LoginView, LogoutView, UserMeView,
     VerifyEmailView, PasswordResetRequestView, PasswordResetConfirmView,
-    AdminUserListView, AdminUserDeleteView
+    AdminUserListView, AdminUserDeleteView, AdminUserPollsView
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -17,4 +17,5 @@ urlpatterns = [
     path('me/', UserMeView.as_view(), name='auth-me'),
     path('admin/users/', AdminUserListView.as_view(), name='admin-user-list'),
     path('admin/users/<int:pk>/', AdminUserDeleteView.as_view(), name='admin-user-delete'),
+    path('admin/users/<int:user_id>/polls/', AdminUserPollsView.as_view(), name='admin-user-polls'),
 ]

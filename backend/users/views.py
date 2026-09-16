@@ -226,3 +226,12 @@ class AdminUserDeleteView(generics.DestroyAPIView):
     """DELETE /api/auth/admin/users/<id>/ — Kullanıcı siler (Sadece Admin)."""
     permission_classes = [IsAdminPermission]
     queryset = User.objects.all()
+
+class AdminUserPollsView(generics.ListAPIView):
+    """GET /api/auth/admin/users/<user_id>/polls/ — Belirli bir kullanıcının tüm anketlerini getirir."""
+    permission_classes = [IsAdminPermission]
+    serializer_class = PollListSerializer
+
+    def get_queryset(self):
+        user_id = self.kwargs.get('user_id')
+        return Poll.objects.filter(creator_id=user_id).prefetch_related('options').order_by('-created_at')

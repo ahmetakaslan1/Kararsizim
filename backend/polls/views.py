@@ -129,3 +129,20 @@ class VoteView(APIView):
         # Güncel seçenekleri döndür
         poll.refresh_from_db()
         return Response(PollDetailSerializer(poll).data, status=status.HTTP_200_OK)
+
+from users.views import IsAdminPermission
+
+class AdminPollBulkDeleteView(APIView):
+    """
+    POST /api/polls/admin/bulk-delete/
+    Belirtilen anket kimliklerini (poll_ids) siler. Sadece Admin.
+    """
+    permission_classes = [IsAdminPermission]
+
+    def post(self, request):
+        poll_ids = request.data.get('poll_ids', [])
+        if not isinstance(poll_ids, list):
+            return Response({'detail': 'poll_ids list olmalıdır.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        deleted_count, _ = Poll.objects.filter(id__in=poll_ids).delete()
+        return Response({'detail': f'{deleted_count} anket başarıyla silindi.'}, status=status.HTTP_200_OK)
