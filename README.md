@@ -1,5 +1,8 @@
 # Kararsız 🤔
 
+[![Vercel](https://img.shields.io/badge/Vercel-Canlı_Demo-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://kararsizim-kappa.vercel.app/)
+
+
 > Karar veremeyenler için anket platformu. Günlük hayattaki "ne yapalım?" sorularını ankete dönüştür, herkesin oyunu al.
 
 ---
