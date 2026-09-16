@@ -5,6 +5,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, AllowAny
+from .permissions import IsOwnerOrReadOnly
 
 from .models import Poll, PollOption, Vote
 from .serializers import (
@@ -60,11 +61,14 @@ class PollListCreateView(generics.ListCreateAPIView):
         )
 
 
-class PollDetailView(generics.RetrieveAPIView):
-    """GET /api/polls/<id>/ → tek anket detayı (herkese açık)."""
+class PollDetailView(generics.RetrieveDestroyAPIView):
+    """
+    GET /api/polls/<id>/ → tek anket detayı (herkese açık).
+    DELETE /api/polls/<id>/ → anketi sil (sadece anket sahibi).
+    """
     queryset = Poll.objects.filter(is_active=True).select_related('creator').prefetch_related('options')
     serializer_class = PollDetailSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
 
 class VoteView(APIView):

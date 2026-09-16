@@ -190,3 +190,13 @@ async function apiVote(pollId, optionId) {
   const data = await res.json();
   return { ok: res.ok, data, status: res.status };
 }
+
+async function apiDeletePoll(pollId) {
+  const res = await apiFetch(`/polls/${pollId}/`, {
+    method: 'DELETE',
+  });
+  if (res && res.status === 204) {
+    return { ok: true };
+  }
+  return { ok: false, status: res ? res.status : null };
+}

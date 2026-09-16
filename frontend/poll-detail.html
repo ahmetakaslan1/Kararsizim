@@ -62,6 +62,7 @@
           <span>·</span>
           <span id="poll-time" style="color:var(--text-muted);"></span>
           <span class="poll-total-votes" id="poll-total" style="margin-left:auto;"></span>
+          <button id="btn-delete-poll" class="btn btn-sm" style="display:none; background-color: #ef4444; border-color: #ef4444; color: white; margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem;">🗑️ Sil</button>
         </div>
       </div>
 
@@ -135,6 +136,24 @@
       document.getElementById('poll-creator-name').textContent   = `@${creator}`;
       document.getElementById('poll-time').textContent           = timeAgo(poll.created_at);
       document.getElementById('poll-total').textContent          = `🗳️ ${poll.total_votes} oy`;
+
+      // Silme Butonu Yetkisi
+      const currentUser = Auth.getUser();
+      if (currentUser && currentUser.username === creator) {
+        const delBtn = document.getElementById('btn-delete-poll');
+        delBtn.style.display = 'inline-block';
+        delBtn.onclick = async () => {
+          if (confirm('Bu anketi kalıcı olarak silmek istediğinize emin misiniz?')) {
+            const { ok } = await apiDeletePoll(poll.id);
+            if (ok) {
+              alert('Anket silindi.');
+              window.location.href = 'index.html';
+            } else {
+              showToast('Anket silinemedi. Sadece kendi anketlerinizi silebilirsiniz.', 'error');
+            }
+          }
+        };
+      }
 
       // Oy verildi mi?
       const myVotedOption = hasVoted(poll.id);
