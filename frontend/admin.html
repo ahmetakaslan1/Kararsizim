@@ -245,15 +245,22 @@
       listDiv.innerHTML = '';
       data.forEach(poll => {
         const date = new Date(poll.created_at).toLocaleDateString('tr-TR');
+        const optionsHtml = (poll.options || []).map(opt => 
+          `<span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); padding:0.2rem 0.4rem; border-radius:4px; font-size:0.7rem;">${opt.text} <strong style="color:var(--primary); margin-left:0.25rem;">${opt.vote_count}</strong></span>`
+        ).join('');
+        
         listDiv.innerHTML += `
           <div class="poll-list-item">
             <input type="checkbox" class="poll-checkbox" value="${poll.id}">
             <div>
               <div style="font-weight:600; margin-bottom:0.25rem;">${poll.question}</div>
-              <div style="font-size:0.8rem; color:var(--text-muted); display:flex; gap:1rem;">
+              <div style="font-size:0.8rem; color:var(--text-muted); display:flex; gap:1rem; margin-bottom:0.5rem;">
                 <span>🗓️ ${date}</span>
-                <span>🗳️ Oy: ${poll.total_votes || 0}</span>
+                <span>🗳️ Toplam Oy: ${poll.total_votes || 0}</span>
                 <span>🏷️ ${poll.category}</span>
+              </div>
+              <div style="display:flex; flex-wrap:wrap; gap:0.4rem;">
+                ${optionsHtml}
               </div>
             </div>
             <button class="btn btn-sm" onclick="deleteSinglePoll(${poll.id})" style="background:transparent; color:var(--danger); border:1px solid var(--danger); padding:0.2rem 0.5rem;">Sil</button>
