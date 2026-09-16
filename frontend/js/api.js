@@ -12,11 +12,15 @@ const Auth = {
   getRefresh: () => localStorage.getItem('kararsiz_refresh'),
   getUser:    () => JSON.parse(localStorage.getItem('kararsiz_user') || 'null'),
   isLoggedIn: () => !!localStorage.getItem('kararsiz_access'),
+  isAdmin:    () => {
+    const user = JSON.parse(localStorage.getItem('kararsiz_user') || 'null');
+    return user && user.is_admin === true;
+  },
 
-  save(access, refresh, username) {
+  save(access, refresh, username, is_admin) {
     localStorage.setItem('kararsiz_access',  access);
     localStorage.setItem('kararsiz_refresh', refresh);
-    localStorage.setItem('kararsiz_user',    JSON.stringify({ username }));
+    localStorage.setItem('kararsiz_user',    JSON.stringify({ username, is_admin }));
   },
 
   clear() {
@@ -131,7 +135,7 @@ async function apiLogin(email, password) {
   });
   const data = await res.json();
   if (res.ok) {
-    Auth.save(data.access, data.refresh, data.username);
+    Auth.save(data.access, data.refresh, data.username, data.is_admin);
     return { ok: true, data };
   }
   return { ok: false, errors: data };
@@ -193,6 +197,25 @@ async function apiVote(pollId, optionId) {
 
 async function apiDeletePoll(pollId) {
   const res = await apiFetch(`/polls/${pollId}/`, {
+    method: 'DELETE',
+  });
+  if (res && res.status === 204) {
+    return { ok: true };
+  }
+  return { ok: false, status: res ? res.status : null };
+}
+
+// ============================================================
+// ADMIN ENDPOİNTLERİ
+// ============================================================
+async function apiGetUsers() {
+  const res = await apiFetch('/auth/admin/users/');
+  if (!res || !res.ok) return { ok: false, data: [] };
+  return { ok: true, data: await res.json() };
+}
+
+async function apiDeleteUser(userId) {
+  const res = await apiFetch(`/auth/admin/users/${userId}/`, {
     method: 'DELETE',
   });
   if (res && res.status === 204) {

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Paneli — Kararsız</title>
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .admin-table th, .admin-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-table th {
+      background: rgba(0, 0, 0, 0.2);
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .admin-table tr:last-child td {
+      border-bottom: none;
+    }
+    .admin-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .badge-admin {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar" role="navigation">
+    <a href="index.html" class="navbar-brand">Kararsız<span class="brand-dot"></span></a>
+    <div class="navbar-actions">
+      <div id="nav-auth"></div>
+      <button class="theme-toggle" id="theme-btn">🌙</button>
+    </div>
+  </nav>
+
+  <main class="container page-content" role="main">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1.5rem;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.25rem;">👑 Admin Paneli</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Sistemdeki tüm kullanıcıları yönetin.</p>
+      </div>
+      <a href="index.html" class="btn btn-secondary btn-sm">← Anasayfaya Dön</a>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Kullanıcı Adı</th>
+          <th>E-posta</th>
+          <th>Kayıt Tarihi</th>
+          <th>Anket Sayısı</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="user-list">
+        <tr><td colspan="5" style="text-align:center; padding: 2rem;">Yükleniyor...</td></tr>
+      </tbody>
+    </table>
+
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      initTheme();
+      updateNavbar();
+
+      // Sadece adminlerin erişebilmesini sağla
+      if (!Auth.isAdmin()) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      await loadUsers();
+    });
+
+    async function loadUsers() {
+      const tbody = document.getElementById('user-list');
+      const { ok, data } = await apiGetUsers();
+
+      if (!ok) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--danger);">Kullanıcılar yüklenirken bir hata oluştu.</td></tr>`;
+        return;
+      }
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Kayıtlı kullanıcı bulunmuyor.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      data.forEach(user => {
+        const date = new Date(user.date_joined).toLocaleDateString('tr-TR');
+        const adminBadge = user.is_admin ? `<span class="badge-admin" style="margin-left: 0.5rem;">Admin</span>` : '';
+        const emailInfo = user.email || 'Bilinmiyor';
+        
+        // Kendisini silemesin
+        const isSelf = user.username === Auth.getUser().username;
+        const deleteBtn = isSelf 
+          ? `<span style="font-size:0.8rem; color:var(--text-muted);">Kendinizsiniz</span>`
+          : `<button class="btn btn-sm" onclick="deleteUser(${user.id}, '${user.username}')" style="background-color: #ef4444; border-color: #ef4444; color: white; padding: 0.25rem 0.5rem; font-size: 0.75rem;">🗑️ Sil</button>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>@${user.username}</strong> ${adminBadge}</td>
+          <td>${emailInfo}</td>
+          <td>${date}</td>
+          <td>${user.polls_count}</td>
+          <td>${deleteBtn}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function deleteUser(id, username) {
+      if (confirm(`@${username} kullanıcısını ve ona ait TÜM anketleri kalıcı olarak silmek istediğinize emin misiniz?`)) {
+        const { ok } = await apiDeleteUser(id);
+        if (ok) {
+          showToast('Kullanıcı ve ona ait her şey silindi.', 'success');
+          loadUsers(); // Tabloyu yenile
+        } else {
+          showToast('Silme işlemi başarısız oldu.', 'error');
+        }
+      }
+    }
+  </script>
+</body>
+</html>

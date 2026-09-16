@@ -139,7 +139,7 @@
 
       // Silme Butonu Yetkisi
       const currentUser = Auth.getUser();
-      if (currentUser && currentUser.username === creator) {
+      if (currentUser && (currentUser.username === creator || Auth.isAdmin())) {
         const delBtn = document.getElementById('btn-delete-poll');
         delBtn.style.display = 'inline-block';
         delBtn.onclick = async () => {

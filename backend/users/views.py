@@ -12,7 +12,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
 
-from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer
+from .serializers import RegisterSerializer, CustomTokenObtainPairSerializer, AdminUserListSerializer
 from polls.serializers import PollListSerializer
 from polls.models import Poll, Vote
 
@@ -199,7 +199,30 @@ class UserMeView(APIView):
         return Response({
             'username': user.username,
             'email': user.email,
+            'is_admin': getattr(user, 'is_admin', False),
             'date_joined': user.date_joined,
             'created_polls': PollListSerializer(created_polls, many=True).data,
             'voted_polls': PollListSerializer(voted_polls, many=True).data,
         }, status=status.HTTP_200_OK)
+
+
+from django.db.models import Count
+from rest_framework import generics
+
+class IsAdminPermission(IsAuthenticated):
+    def has_permission(self, request, view):
+        is_auth = super().has_permission(request, view)
+        return is_auth and getattr(request.user, 'is_admin', False)
+
+class AdminUserListView(generics.ListAPIView):
+    """GET /api/auth/admin/users/ — Tüm kullanıcıları listeler (Sadece Admin)."""
+    permission_classes = [IsAdminPermission]
+    serializer_class = AdminUserListSerializer
+
+    def get_queryset(self):
+        return User.objects.annotate(polls_count=Count('polls')).order_by('-date_joined')
+
+class AdminUserDeleteView(generics.DestroyAPIView):
+    """DELETE /api/auth/admin/users/<id>/ — Kullanıcı siler (Sadece Admin)."""
+    permission_classes = [IsAdminPermission]
+    queryset = User.objects.all()

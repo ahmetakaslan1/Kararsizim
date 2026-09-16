@@ -9,7 +9,12 @@ function updateNavbar() {
   if (!navAuth) return;
 
   if (user) {
+    let adminLink = '';
+    if (Auth.isAdmin()) {
+      adminLink = `<a href="admin.html" class="btn btn-ghost btn-sm" style="color:var(--danger); border-color:var(--danger);">👑 Admin Paneli</a>`;
+    }
     navAuth.innerHTML = `
+      ${adminLink}
       <a href="profile.html" style="font-size:0.85rem;color:var(--text-secondary);font-weight:600; text-decoration:none; margin-right: 0.5rem;" title="Profilime Git">
         👋 ${user.username}
       </a>

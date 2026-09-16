@@ -38,4 +38,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         data['username'] = self.user.username
+        data['is_admin'] = self.user.is_admin
         return data
+
+class AdminUserListSerializer(serializers.ModelSerializer):
+    """Adminin görebileceği kullanıcı listesi, anket sayılarıyla birlikte."""
+    polls_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'date_joined', 'is_active', 'is_admin', 'polls_count')
