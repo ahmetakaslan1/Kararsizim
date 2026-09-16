@@ -199,7 +199,7 @@ class UserMeView(APIView):
         return Response({
             'username': user.username,
             'email': user.email,
-            'is_admin': getattr(user, 'is_admin', False),
+            'is_admin': getattr(user, 'is_superuser', False),
             'date_joined': user.date_joined,
             'created_polls': PollListSerializer(created_polls, many=True).data,
             'voted_polls': PollListSerializer(voted_polls, many=True).data,
@@ -212,7 +212,7 @@ from rest_framework import generics
 class IsAdminPermission(IsAuthenticated):
     def has_permission(self, request, view):
         is_auth = super().has_permission(request, view)
-        return is_auth and getattr(request.user, 'is_admin', False)
+        return is_auth and getattr(request.user, 'is_superuser', False)
 
 class AdminUserListView(generics.ListAPIView):
     """GET /api/auth/admin/users/ — Tüm kullanıcıları listeler (Sadece Admin)."""

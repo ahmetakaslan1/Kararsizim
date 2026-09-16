@@ -11,4 +11,4 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
             return True
 
         # Yazma izinleri (DELETE, vb.) sadece anketin sahibine (creator) veya admine verilir
-        return obj.creator == request.user or getattr(request.user, 'is_admin', False)
+        return obj.creator == request.user or getattr(request.user, 'is_superuser', False)

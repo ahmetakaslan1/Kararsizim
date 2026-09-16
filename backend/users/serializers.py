@@ -38,7 +38,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         data['username'] = self.user.username
-        data['is_admin'] = self.user.is_admin
+        data['is_admin'] = self.user.is_superuser
         return data
 
 class AdminUserListSerializer(serializers.ModelSerializer):
@@ -47,4 +47,4 @@ class AdminUserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'date_joined', 'is_active', 'is_admin', 'polls_count')
+        fields = ('id', 'username', 'email', 'date_joined', 'is_active', 'is_superuser', 'polls_count')
